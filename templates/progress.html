@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+        crossorigin="anonymous">
+    <style>
+        .progress-box {
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 20px;
+            transition: width 0.5s ease-in-out;
+        }
+
+        .progress-bar.finished {
+            background-color: #28a745 !important;
+        }
+        .progress-bar.failed {
+            background-color: #dc3545 !important; /* Changed color to red */
+        }
+    </style>
+    <script>
+        function reloadBatch(playlistName, batchNumber, batchSize) {
+            fetch('/reload-batch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'playlistName': playlistName,
+                    'batchNumber': batchNumber,
+                    'batchSize': batchSize
+                })
+            })
+            .then(response => response.text())
+            .then(data => console.log(data));
+        }
+    </script>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1>Progress</h1>
+        {% if progress %}
+        {% for playlist, batches in progress.items() %}
+            <div class="accordion" id="accordion{{ loop.index }}">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ loop.index }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="false" aria-controls="collapse{{ loop.index }}">
+                            Playlist: {{ playlist }}
+                        </button>
+                    </h2>
+                    <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading{{ loop.index }}" data-bs-parent="#accordion{{ loop.index }}">
+                        <div class="accordion-body">
+                            {% for batch, info in batches.items() if info['status'] == 'active' %}
+                                <div class="progress-box">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <p>Batch {{ batch }}</p>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-primary" role="progressbar"
+                                            style="width: {{ (info['value'] / info['max']) * 100 }}%"
+                                            aria-valuenow="{{ info['value'] }}" aria-valuemin="0" aria-valuemax="{{ info['max'] }}"
+                                            data-playlist-name="{{ playlist }}" data-batch-number="{{ batch }}">
+                                            {{ info['value'] }} / {{ info['max'] }}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            {% for batch, info in batches.items() if info['status'] == 'failed' %}
+                                <div class="progress-box">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <p>Batch {{ batch }}</p>
+                                        <button class="btn btn-primary" onclick="reloadBatch('{{ playlist }}', {{ batch }}, {{ info['max'] }})">Reload Batch</button>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-danger failed" role="progressbar"
+                                            style="width: 100%" aria-valuenow="{{ info['value'] }}" aria-valuemin="0"
+                                            aria-valuemax="{{ info['max'] }}" data-playlist-name="{{ playlist }}" data-batch-number="{{ batch }}">
+                                            {{ info['value'] }} / {{ info['max'] }} - Failed
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            {% for batch, info in batches.items() if info['status'] == 'finished' %}
+                                <div class="progress-box">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <p>Batch {{ batch }}</p>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-success finished" role="progressbar"
+                                            style="width: 100%" aria-valuenow="{{ info['value'] }}" aria-valuemin="0"
+                                            aria-valuemax="{{ info['max'] }}" data-playlist-name="{{ playlist }}" data-batch-number="{{ batch }}">
+                                            {{ info['value'] }} / {{ info['max'] }} - Done
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        {% else %}
+        <p>No work in progress...</p>
+        {% endif %}
+    </div>
+{#    <script>#}
+{#        setInterval(function () {#}
+{#            // Get all progress bars#}
+{#            var progressBars = document.getElementsByClassName('progress-bar');#}
+{##}
+{#            // Iterate over each progress bar#}
+{#            for (var i = 0; i < progressBars.length; i++) {#}
+{#                var progressBar = progressBars[i];#}
+{##}
+{#                // Get the playlist name and batch number from the progress bar's data attributes#}
+{#                var playlistName = progressBar.dataset.playlistName;#}
+{#                var batchNumber = progressBar.dataset.batchNumber;#}
+{##}
+{#                // Fetch the updated progress data for the batch#}
+{#                fetch(`/get-progress/${playlistName}/${batchNumber}`)#}
+{#                    .then(response => response.json())#}
+{#                    .then(data => {#}
+{#                        // Update the progress bar's width and text#}
+{#                        progressBar.style.width = `${(data.value / data.max) * 100}%`;#}
+{#                        progressBar.textContent = `${data.value} / ${data.max}`;#}
+{#                    });#}
+{#            }#}
+{#        }, 1000); // Refresh every second#}
+{#    </script>#}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+    <script>
+        var socket = io();
+
+        socket.on('reload', function(data) {
+            console.log('Received reload:', data)
+            // Reload the page
+            location.reload();
+        });
+
+        socket.on('progress_update', function(data) {
+            console.log('Received progress update:', data)
+            // Get the progress bar for the updated batch
+            var progressBar = document.querySelector(`.progress-bar[data-playlist-name="${data.playlist}"][data-batch-number="${data.batch}"]`);
+
+            // Update the progress bar's width and text
+            progressBar.style.width = `${(data.value / progressBar.getAttribute('aria-valuemax')) * 100}%`;
+            progressBar.textContent = `${data.value} / ${progressBar.getAttribute('aria-valuemax')}`;
+        });
+
+        socket.on('batch_failed', function(data) {
+            console.log('Received batch failed:', data)
+            // Get the progress bar for the failed batch
+            var progressBar = document.querySelector(`.progress-bar[data-playlist-name="${data.playlist}"][data-batch-number="${data.batch}"]`);
+
+            // Update the progress bar's width and text
+            progressBar.style.width = '100%';
+            progressBar.textContent = `${data.value} / ${progressBar.getAttribute('aria-valuemax')} - Failed`;
+            progressBar.classList.add('failed');
+        });
+
+        socket.on('batch_finished', function(data) {
+            console.log('Received batch finished:', data)
+            // Get the progress bar for the finished batch
+            var progressBar = document.querySelector(`.progress-bar[data-playlist-name="${data.playlist}"][data-batch-number="${data.batch}"]`);
+
+            // Update the progress bar's width and text
+            progressBar.style.width = '100%';
+            progressBar.textContent = `${data.value} / ${progressBar.getAttribute('aria-valuemax')} - Done`;
+            progressBar.classList.add('finished');
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,23 @@
+/.venv/
+/.env
+/.cache
+
+# Ignorer les anciens fichiers
+/old/
+
+# Ignorer les fichiers de données
+/data/playlist_data.json
+/data/playlist_ids.json
+
+# Ignorer les fichiers dans les dossers data/lrc et data/playlists
+data/lrc/*
+data/playlists/*
+# Mais inclure les dossiers eux-mêmes
+!data/lrc
+!data/playlists
+
+# Ignorer les fichiers de la partie en cours
+/current_game/config.json
+/current_game/songs.json
+# Mais inclure le dossier lui-même
+!current_game/

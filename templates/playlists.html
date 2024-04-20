@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blindtest</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+        crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1>Playlist loader</h1>
+
+        <!-- Form for adding a new playlist -->
+        <form action="/add-playlist" method="post">
+            <div class="mb-3">
+                <label for="playlistName" class="form-label">Playlist Name</label>
+                <input type="text" class="form-control" id="playlistName" name="playlistName" required>
+            </div>
+            <div class="mb-3">
+                <label for="spotifyId" class="form-label">Spotify ID or URL</label>
+                <input type="text" class="form-control" id="spotifyId" name="spotifyId" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Playlist</button>
+            <a href="/" class="btn btn-secondary float-end">Home</a>
+        </form>
+
+        <!-- List of existing playlists -->
+        <h2 class="mt-5">Existing Playlists</h2>
+        <ul id="playlistList" class="list-group">
+            <!-- Playlists will be added here dynamically -->
+            {% for playlist in playlists %}
+                <li class="list-group-item {% if playlist not in analysed_playlists %}text-danger{% endif %}">
+                    {{ playlist }}
+                </li>
+            {% endfor %}
+        </ul>
+
+        {% if unanalysed_playlists %}
+            <button id="analyseButton" class="btn btn-primary mt-3" onclick=analyse()>Analyse Playlists</button>
+            <a id="viewProgressButton" class="btn btn-primary mt-3 float-end" href="/progress">View Progress</a>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+    <script>
+        function analyse() {
+                    console.log("Button pressed")
+                    var batchSize = prompt("Please enter the batch size", "15");
+                    if (batchSize != null) {
+                        fetch('/analyse-playlists', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ batchSize: batchSize }),
+                        });
+                    }
+                }
+    </script>
+    <script>
+        document.querySelector('form').addEventListener('submit', function(event) {
+            // Prevent the form from being submitted normally
+            event.preventDefault();
+
+            // Get the form data
+            var formData = new FormData(event.target);
+
+            // Convert the form data to an object
+            var data = {};
+            formData.forEach(function(value, key) {
+                data[key] = value;
+            });
+
+            // Send the data as a POST request
+            fetch('/add-playlist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+        });
+    </script>
+    <script>
+        var socket = io();
+
+        // Listen for the 'playlist_added' event and add the new playlist to the list
+        socket.on('playlist_added', function(data) {
+            // Get the playlist list element
+            var playlistList = document.getElementById('playlistList');
+
+            // Create a new list item
+            var listItem = document.createElement('li');
+            listItem.textContent = data.playlist;
+            listItem.classList.add('list-group-item', 'text-danger');
+
+            // Add the new playlist to the top of the list
+            playlistList.insertBefore(listItem, playlistList.firstChild);
+
+            // Show the analyse button if it's not already visible
+            var analyseButton = document.getElementById('analyseButton');
+            if (!analyseButton) {
+                analyseButton = document.createElement('button');
+                analyseButton.textContent = 'Analyse Playlists';
+                analyseButton.classList.add('btn', 'btn-primary', 'mt-3');
+                analyseButton.onclick = analyse;
+                playlistList.parentNode.insertBefore(analyseButton, playlistList.nextSibling);
+                viewProgressButton = document.createElement('a');
+                viewProgressButton.textContent = 'View Progress';
+                viewProgressButton.classList.add('btn', 'btn-primary', 'mt-3', 'float-end');
+                viewProgressButton.href = '/progress';
+                playlistList.parentNode.insertBefore(viewProgressButton, analyseButton.nextSibling);
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Configuration</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Configuration</h1>
+        <form id="configForm" class="mt-5">
+            <div class="mb-3">
+                <label for="playlists" class="form-label">Playlists</label>
+                <a href="/playlists" class="btn btn-secondary ms-2 float-end">Edit Playlists</a>
+                <select multiple class="form-select mt-2" id="playlists">
+                    <!-- Options will be populated dynamically -->
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="numSongs" class="form-label">Number of Songs</label>
+                <input type="number" class="form-control" id="numSongs">
+            </div>
+            <div class="mb-3">
+                <label for="waitTime" class="form-label">Wait Time (seconds)</label>
+                <input type="number" class="form-control" id="waitTime">
+            </div>
+            <div class="mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="playbackToggle" checked>
+                    <label class="form-check-label" for="playbackToggle">Play on Sonos Speaker</label>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Configuration</button>
+            <a href="/" class="btn btn-secondary float-end">Home</a>
+        </form>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
+    <script>
+            document.getElementById('configForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                var playlists = Array.from(document.getElementById('playlists').selectedOptions).map(option => option.value);
+                var numSongs = document.getElementById('numSongs').value;
+                var waitTime = document.getElementById('waitTime').value;
+                var playbackToggle = document.getElementById('playbackToggle').checked;
+
+                var data = {
+                    playlists: playlists,
+                    numSongs: numSongs,
+                    waitTime: waitTime,
+                    playbackToggle: playbackToggle
+                };
+
+                fetch('/save-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                }).then(response => response.text())
+                  .then(data => console.log(data));
+            });
+
+            // Fetch playlists when the page loads
+            window.onload = function() {
+                fetch('/get-analysed-playlists')
+                    .then(response => response.json())
+                    .then(data => {
+                        var select = document.getElementById('playlists');
+                        data.forEach(function(playlist) {
+                            var option = document.createElement('option');
+                            option.text = playlist;
+                            option.value = playlist;
+                            select.add(option);
+                        });
+                    });
+            };
+        </script>
+</body>
+</html>

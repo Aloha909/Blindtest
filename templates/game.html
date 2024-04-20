@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Blindtest</title>
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa; /* Change this to your preferred color */
+        }
+        #timerView {
+            display: none;
+        }
+        #songInfoView {
+            display: none;
+        }
+        .song-art {
+            max-width: 100px;  /* Adjust as needed */
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="timerView" class="container text-center">
+        <h1 id="time" class="my-4">00:00</h1>
+    </div>
+    <div id="songInfoView" class="container">
+        <div class="row">
+            <div id="songInfo" class="col">
+                <h2 id="title">Title will be displayed here</h2>
+                <h3 id="artist">Artist will be displayed here</h3>
+            </div>
+            <div id="songArt" class="col">
+                <img id="songArtImage" src="" alt="Song Art" class="img-fluid">
+            </div>
+        </div>
+        <div class="text-center my-4">
+            <button id="nextButton" class="btn btn-primary">Next Song</button>
+        </div>
+    </div>
+    <script>
+        var socket = io();
+        var timerId;
+        var timeLeft = {{ initial_time }};
+
+        function startTimer() {
+            timerId = setInterval(function() {
+                timeLeft--;
+                document.querySelector('#time').textContent = timeLeft > 9 ? "00:" + timeLeft : "00:0" + timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerId);
+                }
+            }, 1000);
+        }
+
+        function nextSong() {
+            fetch('/next-song')
+                .then(response => response.json())
+                .then(song => {
+                    if (song.error && song.error === 'No more songs') {
+                        // No more songs left, change the button to a Recap button
+                        var nextButton = document.querySelector('#nextButton');
+                        nextButton.textContent = 'Recap';
+                        nextButton.removeEventListener('click', nextSong);
+                        nextButton.addEventListener('click', function() {
+                            window.location.href = '/recap';
+                        });
+                    } else {
+                        console.log("Playing song: " + song.url);
+                        document.querySelector('#timerView').style.display = 'block';
+                        document.querySelector('#songInfoView').style.display = 'none';
+                        timeLeft = {{ initial_time }}; // Reset the time left
+                        startTimer(); // Start the timer
+                    }
+                });
+        }
+
+        document.querySelector('#nextButton').addEventListener('click', function() {
+            clearInterval(timerId); // Stop the current timer
+            nextSong();
+        });
+
+        // Start the game
+        nextSong();
+
+        // Listen for the 'songInfo' event from the server
+        socket.on('songInfo', function(song) {
+            document.querySelector('#title').textContent = song.title;
+            document.querySelector('#artist').textContent = song.artist;
+            document.querySelector('#songArtImage').src = song.song_art;
+            document.querySelector('#timerView').style.display = 'none';
+            document.querySelector('#songInfoView').style.display = 'block';
+        });
+    </script>
+</body>
+</html>
