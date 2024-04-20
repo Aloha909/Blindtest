@@ -1,6 +1,6 @@
 # Blindtest by [Aloha909](https://github.com/Aloha909)
 
-Blindtest app based on custom playlists.\
+Blindtest app based on custom playlists.
 
 ### App
 To start the app, run the `app.py` file.
